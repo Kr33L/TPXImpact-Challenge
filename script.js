@@ -17,75 +17,72 @@ let interval = 0;
 
 // <==== Helper Functions ====>
 
-const stopTimer = () => (paused = true);
+//const pauseTimer = (bool) => (paused = bool); //! Dunno why it doesn't work
+const pauseTimer = () => (paused = true);
+const laps = () => document.querySelectorAll(".lap");
 const pad = (num) => (num < 10 ? "0" + num : num);
-const getCentiseconds = () => Math.floor(elapsedTime / 10) % 100;
-const getSeconds = () => Math.floor(elapsedTime / 1000) % 60;
-const getMinutes = () => Math.floor(elapsedTime / 60000) % 60;
-const getHours = () => Math.floor(elapsedTime / 3600000) % 60;
+const getTime = (division, modulus) => Math.floor(elapsedTime / division) % modulus;
+
+const makeTime = () => {
+	const centiseconds = getTime(10, 100);
+	const seconds = getTime(1000, 60);
+	const minutes = getTime(60000, 60);
+	const hours = getTime(3600000, 60);
+	time.textContent = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}:${pad(centiseconds)}`;
+};
+
+const addLap = (lapTime) => {
+	const lap = document.createElement("li");
+	lap.classList.add("lap");
+	lap.textContent = lapTime;
+	lapList.append(lap);
+};
+
+const saveLaps = () => {
+	const lapTimes = [];
+	laps().forEach((lap) => lapTimes.push(lap.textContent));
+	localStorage.setItem("lapTimes", JSON.stringify(lapTimes));
+};
+
+const updateTime = () => {
+	if (paused === true) clearInterval(interval);
+	currentTime = Date.now();
+	elapsedTime = currentTime - startTime;
+	makeTime();
+};
 
 // <==== Functions ====>
 
-function updateTime() {
-	const centiseconds = getCentiseconds();
-	const seconds = getSeconds();
-	const minutes = getMinutes();
-	const hours = getHours();
-	time.textContent = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}:${pad(centiseconds)}`;
-}
-
-function updateTimer() {
-	if (paused) clearInterval(interval);
-	currentTime = Date.now();
-	elapsedTime = currentTime - startTime;
-	updateTime();
-}
-
 function startTimer() {
-	if (!paused) return;
+	if (paused === false) return;
 	startTime = Date.now() - elapsedTime;
-	interval = setInterval(updateTimer, 10);
+	interval = setInterval(updateTime, 10);
 	paused = false;
 }
 
 function resetTimer() {
-	stopTimer();
+	clearInterval(interval);
 	elapsedTime = 0;
 	time.textContent = "00:00:00:00";
+	paused = true;
 }
 
 function clearLaps() {
-	if (!savedLaps) return;
 	localStorage.removeItem("lapTimes");
-	document.querySelectorAll(".lap").forEach((lap) => lap.remove());
-}
-
-function saveLaps() {
-	const lapTimes = [];
-	document.querySelectorAll(".lap").forEach((lap) => lapTimes.push(lap.textContent));
-	localStorage.setItem("lapTimes", JSON.stringify(lapTimes));
+	laps().forEach((lap) => lap.remove());
 }
 
 function lapTimer() {
 	if (time.textContent === "00:00:00:00") return;
 	if (lapList.children.length === 11) return;
-	const lap = document.createElement("li");
-	lap.classList.add("lap");
-	lap.textContent = time.textContent;
-	lapList.append(lap);
+	if (lapList.textContent.includes(time.textContent)) return; //? Does it make sense to not be able to add the same lap twice?
+	addLap(time.textContent);
 	saveLaps();
-}
-
-function addLap(lapTime) {
-	const lap = document.createElement("li");
-	lap.classList.add("lap");
-	lap.textContent = lapTime
-	lapList.append(lap);
 }
 
 function loadLaps() {
 	if (!savedLaps) return;
-	const lapTimes = JSON.parse(localStorage.getItem("lapTimes"));
+	const lapTimes = JSON.parse(savedLaps);
 	lapTimes.forEach((lapTime) => addLap(lapTime));
 }
 
@@ -93,7 +90,7 @@ function loadLaps() {
 
 window.addEventListener("load", loadLaps);
 startBtn.addEventListener("click", startTimer);
-stopBtn.addEventListener("click", stopTimer);
+stopBtn.addEventListener("click", pauseTimer);
 resetBtn.addEventListener("click", resetTimer);
 lapBtn.addEventListener("click", lapTimer);
 clearBtn.addEventListener("click", clearLaps);
