@@ -74,7 +74,7 @@ function clearLaps() {
 
 function lapTimer() {
 	if (time.textContent === "00:00:00:00") return;
-	if (lapList.children.length === 11) return;
+	if (lapList.children.length === 10) return;
 	if (lapList.textContent.includes(time.textContent)) return; //? Does it make sense to not be able to add the same lap twice?
 	addLap(time.textContent);
 	saveLaps();
